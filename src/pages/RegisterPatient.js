@@ -14,7 +14,7 @@ const RegistrationPatient = () => {
 
     // Prepare data to send as key-value pairs
     const payload = {
-      name: values.name,
+      patientName: values.patientName,
       phoneNumber: values.phoneNumber,
       gender: values.gender,
       age: values.age,
@@ -49,7 +49,7 @@ const RegistrationPatient = () => {
         style={{ width: 400 }}
       >
         <Form.Item
-          name="name"
+          name="patientName"
           label="Name"
           rules={[{ required: false, message: 'Please input your Name!' }]}
         >

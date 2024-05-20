@@ -1,11 +1,38 @@
-import React from 'react';
-import { Form, Input, Button, Checkbox } from 'antd';
+import React, { useState, useEffect } from 'react';
+import { Form, Input, Button, Checkbox, message } from 'antd';
+import { useNavigate } from 'react-router-dom';
+
 import { UserOutlined, LockOutlined } from '@ant-design/icons';
-// import 'antd/dist/antd.css'; // Import Ant Design styles
+import axios from 'axios';
 
 const LoginPatient = () => {
+  const [patients, setPatients] = useState([]);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    axios.get('http://localhost:4000/v1/patients')
+      .then(response => {
+        // console.log('respons.data',response.data);
+        setPatients(response.data);
+      })
+      .catch(error => {
+        console.error('There was an error fetching the patient!', error);
+      });
+  }, []);
+
   const onFinish = (values) => {
-    console.log('Success:', values);
+    const { email, password } = values;
+    const patient = patients.find(doc => doc.email === email && doc.password === password);
+
+    if (patient) {
+      message.success('Login successful! for patient');
+      console.log(patient);
+      // remaining, set auth token
+      navigate('/patient-dashboard',{state:{user:patient.name}});
+  
+    } else {
+      message.error('Invalid email or password!');
+    }
   };
 
   const onFinishFailed = (errorInfo) => {
@@ -15,21 +42,22 @@ const LoginPatient = () => {
   return (
     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
       <Form
-        name="login"
-        initialValues={{ remember: true }}
+        name="patientLogin"
         onFinish={onFinish}
         onFinishFailed={onFinishFailed}
         style={{ width: 300 }}
       >
         <Form.Item
-          name="username"
-          rules={[{ required: true, message: 'Please input your Username!' }]}
+          name="email"
+          label="Email"
+          rules={[{ required: true, message: 'Please input your Email', type: 'email'  }]}
         >
           <Input prefix={<UserOutlined />} placeholder="Username" />
         </Form.Item>
 
         <Form.Item
           name="password"
+          label="Password"
           rules={[{ required: true, message: 'Please input your Password!' }]}
         >
           <Input.Password prefix={<LockOutlined />} placeholder="Password" />

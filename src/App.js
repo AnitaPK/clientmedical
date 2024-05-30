@@ -5,6 +5,7 @@ import RegistrationPatient from './pages/RegisterPatient';
 import RegistrationDoctor from './pages/RegisterDoctor';
 import LoginDoctor from './pages/LoginDoctor';
 import DashboardPatient from './pages/DashboardPatient';
+import DashboardDoctor from './pages/DashboardDoctor';
 import { Route, Routes, BrowserRouter } from 'react-router-dom';
 import Navbar from './components/Navbar';
 function App() {
@@ -17,6 +18,7 @@ function App() {
       <Route path='/doctor-register' element={<RegistrationDoctor />}></Route>
       <Route path='/doctor-login' element={<LoginDoctor />}></Route>
       <Route path='/patient-dashboard' element={<DashboardPatient />}></Route>
+      <Route path='/doctor-dashboard' element={<DashboardDoctor />}></Route>
 
 
       </Routes>

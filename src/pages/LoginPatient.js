@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Form, Input, Button, Checkbox, message } from 'antd';
-import { useNavigate } from 'react-router-dom';
-
 import { UserOutlined, LockOutlined } from '@ant-design/icons';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 
 const LoginPatient = () => {
   const [patients, setPatients] = useState([]);
@@ -12,7 +11,6 @@ const LoginPatient = () => {
   useEffect(() => {
     axios.get('http://localhost:4000/v1/patients')
       .then(response => {
-        // console.log('respons.data',response.data);
         setPatients(response.data);
       })
       .catch(error => {
@@ -23,13 +21,10 @@ const LoginPatient = () => {
   const onFinish = (values) => {
     const { email, password } = values;
     const patient = patients.find(doc => doc.email === email && doc.password === password);
-
+    console.log(patient);
     if (patient) {
-      message.success('Login successful! for patient');
-      console.log(patient);
-      // remaining, set auth token
-      navigate('/patient-dashboard',{state:{user:patient.name}});
-  
+      message.success('Login successful for patient');
+      navigate('/patient-dashboard', { state: { user: patient.name, id: patient._id } }); 
     } else {
       message.error('Invalid email or password!');
     }
@@ -50,7 +45,7 @@ const LoginPatient = () => {
         <Form.Item
           name="email"
           label="Email"
-          rules={[{ required: true, message: 'Please input your Email', type: 'email'  }]}
+          rules={[{ required: true, message: 'Please input your Email', type: 'email' }]}
         >
           <Input prefix={<UserOutlined />} placeholder="Username" />
         </Form.Item>

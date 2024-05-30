@@ -1,108 +1,177 @@
-import React, { useState, useEffect } from 'react';
-import { Layout, Menu, Dropdown, Button, Select, DatePicker, message } from 'antd';
-import { LogoutOutlined, UserOutlined } from '@ant-design/icons';
-import axios from 'axios';
-import moment from 'moment';
-import { useLocation, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from "react";
+import {
+  Layout,
+  Menu,
+  message,
+  Button,
+  DatePicker,
+  Space,
+  Modal,
+  Select,
+  Table,
+} from "antd";
+import { LogoutOutlined, UserOutlined } from "@ant-design/icons";
+import axios from "axios";
+import { useLocation, useNavigate } from "react-router-dom";
 
 const { Header, Content } = Layout;
 const { Option } = Select;
 
-const DashboardPatient = ({ userName }) => {
-  const location = useLocation();
-  const navigate = useNavigate();
+const DashboardPatient = () => {
+  const [appointments, setAppointments] = useState([]);
   const [doctors, setDoctors] = useState([]);
-  const [selectedDoctor, setSelectedDoctor] = useState(null);
-  const [selectedDate, setSelectedDate] = useState(moment());
-  const [timeSlots, setTimeSlots] = useState([]);
-
-  // const userName = location.state?.user?.name || 'Guest';
+  const [selectedDoctorId, setSelectedDoctorId] = useState(null);
+  const [selectedDateTime, setSelectedDateTime] = useState(null);
+  const [modalVisible, setModalVisible] = useState(false);
+  const navigate = useNavigate();
+  const userName = useLocation().state?.user || "Guest";
+  const userId = useLocation().state?.id; 
+  console.log(userId,userName);
 
   useEffect(() => {
-    axios.get('http://localhost:4000/v1/doctors')
-      .then(response => {
-        console.log("**response.data**",response.data);
+    // Fetch appointments
+    axios
+      .get("http://localhost:4000/v1/allAppointments")
+      .then((response) => {
+        setAppointments(response.data);
+      })
+      .catch((error) => {
+        console.error("Error fetching appointments:", error);
+      });
+
+    // Fetch doctors
+    axios
+      .get("http://localhost:4000/v1/doctors")
+      .then((response) => {
         setDoctors(response.data);
       })
-      .catch(error => {
-        console.error('There was an error fetching the doctors!', error);
+      .catch((error) => {
+        console.error("Error fetching doctors:", error);
       });
   }, []);
 
-  const handleDoctorChange = (value) => {
-    setSelectedDoctor(value);
-    generateTimeSlots(selectedDate);
-  };
-
-  const handleDateChange = (date) => {
-    setSelectedDate(date);
-    generateTimeSlots(date);
-  };
-
-  const generateTimeSlots = (date) => {
-    const slots = [];
-    let startTime = moment(date).set({ hour: 10, minute: 0 });
-    const endTime = moment(date).set({ hour: 18, minute: 0 });
-
-    while (startTime < endTime) {
-      slots.push(startTime.format('HH:mm'));
-      startTime = moment(startTime).add(2, 'hours');
-    }
-    setTimeSlots(slots);
-  };
-
   const handleLogout = () => {
-    // Perform logout actions (e.g., clear tokens, redirect to login)
-    message.success('Logout successful!');
-    navigate('/patient-login');
+    message.success("Logout successful!");
+    navigate("/patient-login");
   };
+
+  const handleDateTimeChange = (date) => {
+    setSelectedDateTime(date);
+  };
+
+  const handleAddAppointment = () => {
+    console.log("selectedDoctorId:", selectedDoctorId);
+    console.log("selectedDateTime:", selectedDateTime);
+
+
+    if (!selectedDoctorId || !selectedDateTime) {
+      message.error(
+        "Please select a doctor and a date and time for the appointment."
+      );
+      return;
+    }
+  
+    // const selectedDoctor = doctors.find((doctor) => doctor.id === selectedDoctorId);
+    // console.log("selectedDoctor:", selectedDoctor);
+    // if (!selectedDoctor) {
+    //   message.error("Selected doctor not found.");
+    //   return;
+    // }
+  
+    const appointmentData = {
+      doctorId: selectedDoctorId,
+      // doctorName: selectedDoctor.name,
+      patientId:userId,
+      appointmentDateTime: selectedDateTime.format("YYYY-MM-DD HH:mm:ss"),
+      status: "Pending",
+    };
+    console.log("appointmentData",appointmentData);
+  
+    axios
+      .post("http://localhost:4000/v1/appointment", appointmentData)
+      .then((response) => {
+        message.success("Appointment added successfully!");
+        setModalVisible(false);
+        setAppointments([...appointments, response.data]);
+      })
+      .catch((error) => {
+        console.error("Error adding appointment:", error);
+        message.error("Failed to add appointment. Please try again.");
+      });
+  };
+
+  const columns = [
+    { title: "Doctor Name", dataIndex: "doctorName", key: "doctorName" },
+    { title: "Time", dataIndex: "time", key: "time" },
+    { title: "Status", dataIndex: "status", key: "status" },
+  ];
 
   return (
     <Layout>
-      <Header style={{ display: 'flex', justifyContent: 'space-between' }}>
-        <div className="logo" style={{ color: 'white', fontWeight: 'bold' }}>MyLogo</div>
+      <Header style={{ display: "flex", justifyContent: "space-between" }}>
+        <div className="logo" style={{ color: "white", fontWeight: "bold" }}>
+          MyLogo
+        </div>
         <Menu theme="dark" mode="horizontal">
           <Menu.Item key="user" icon={<UserOutlined />}>
             {userName}
           </Menu.Item>
-          <Menu.Item key="logout" icon={<LogoutOutlined />} onClick={handleLogout}>
+          <Menu.Item
+            key="logout"
+            icon={<LogoutOutlined />}
+            onClick={handleLogout}
+          >
             Logout
           </Menu.Item>
         </Menu>
       </Header>
-      <Content style={{ padding: '0 50px', marginTop: 16 }}>
+      <Content style={{ padding: "0 50px", marginTop: 16 }}>
         <div className="site-layout-content">
-          <h2>Get Appointment</h2>
-          <div style={{ marginBottom: 16 }}>
+          <Button type="primary" onClick={() => setModalVisible(true)}>
+            New Appointment
+          </Button>
+          <Modal
+            title="New Appointment"
+            visible={modalVisible}
+            onCancel={() => setModalVisible(false)}
+            footer={[
+              <Button key="back" onClick={() => setModalVisible(false)}>
+                Close
+              </Button>,
+              <Button
+                key="submit"
+                type="primary"
+                onClick={handleAddAppointment}
+              >
+                Create Appointment
+              </Button>,
+            ]}
+          >
+            <Space direction="vertical">
             <Select
-              style={{ width: 300 }}
-              placeholder="Select a doctor"
-              onChange={handleDoctorChange}
-            >
-              {doctors.map((doctor) => (
-                <Option key={doctor.id} value={doctor.id}>
-                  {doctor.name} - {doctor.specialist}
-                </Option>
-              ))}
-            </Select>
-          </div>
-          <div style={{ marginBottom: 16 }}>
-            <DatePicker
-              style={{ width: 300 }}
-              defaultValue={moment()}
-              onChange={handleDateChange}
-            />
-          </div>
-          {selectedDoctor && (
-            <div>
-              <h3>Available Time Slots</h3>
-              <ul>
-                {timeSlots.map((slot, index) => (
-                  <li key={index}>{slot}</li>
+                placeholder="Select Doctor"
+                style={{ width: "100%" }}
+                onChange={(value) => {
+                  console.log("Selected doctor ID:", value);
+                  setSelectedDoctorId(value);
+                }}
+                value={selectedDoctorId}
+              >
+                {doctors.map((doctor) => (
+                  <Option key={doctor._id} value={doctor._id}>
+                    {doctor.name}
+                  </Option>
                 ))}
-              </ul>
-            </div>
-          )}
+              </Select>
+              <DatePicker
+                showTime
+                onChange={handleDateTimeChange}
+                placeholder="Select Date and Time"
+              />
+            </Space>
+          </Modal>
+          <h2>Your Appointments</h2>
+          <Table dataSource={appointments} columns={columns} />
         </div>
       </Content>
     </Layout>

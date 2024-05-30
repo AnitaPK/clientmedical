@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Form, Input, Button, message } from 'antd';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 
 const DoctorLogin = () => {
   const [doctors, setDoctors] = useState([]);
+  const navigate = useNavigate();
 
   useEffect(() => {
     axios.get('http://localhost:4000/v1/doctors')
@@ -21,8 +23,10 @@ const DoctorLogin = () => {
     const doctor = doctors.find(doc => doc.email === email && doc.password === password);
 
     if (doctor) {
-      message.success('Login successful!');
-      // Perform login actions (e.g., redirect to dashboard, set auth token)
+      message.success('Login successful! for doctor');
+      console.log(doctor);
+      // Perform set auth token
+      navigate('/doctor-dashboard')
     } else {
       message.error('Invalid email or password!');
     }

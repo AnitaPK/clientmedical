@@ -25,13 +25,13 @@ const RegistrationPatient = () => {
       address: values.address,
     };
 
-    axios.post('http://localhost:4000/v1/patient/addPatient', payload)
+    axios.post('http://localhost:4000/api/patient/addPatient', payload)
       .then((response) => {
         console.log('Success:', response.data);
         message.success('Registration successful!');
       })
       .catch((error) => {
-        console.error('There was an error!', error);
+        // console.error('There was an error!', error.message);
         message.error('Registration failed!');
       });
   };

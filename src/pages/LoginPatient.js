@@ -9,7 +9,7 @@ const LoginPatient = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    axios.get('http://localhost:4000/v1/patients')
+    axios.get('http://localhost:4000/api/patients')
       .then(response => {
         setPatients(response.data);
       })
@@ -18,6 +18,7 @@ const LoginPatient = () => {
       });
   }, []);
 
+  
   const onFinish = (values) => {
     const { email, password } = values;
     const patient = patients.find(doc => doc.email === email && doc.password === password);

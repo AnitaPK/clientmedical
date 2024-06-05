@@ -1,18 +1,9 @@
 import React, { useState, useEffect } from "react";
-import {
-  Layout,
-  Menu,
-  message,
-  Button,
-  DatePicker,
-  Space,
-  Modal,
-  Select,
-  Table,
-} from "antd";
+import { Layout, Menu, message, Button, DatePicker, Space, Modal, Select, Table } from "antd";
 import { LogoutOutlined, UserOutlined } from "@ant-design/icons";
 import axios from "axios";
 import { useLocation, useNavigate } from "react-router-dom";
+import moment from "moment";
 
 const { Header, Content } = Layout;
 const { Option } = Select;
@@ -25,30 +16,35 @@ const DashboardPatient = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const navigate = useNavigate();
   const userName = useLocation().state?.user || "Guest";
-  const userId = useLocation().state?.id; 
-  console.log(userId,userName);
+  const userId = useLocation().state?.id;
 
   useEffect(() => {
-    // Fetch appointments
+    fetchAppointments();
+    fetchDoctors();
+  }, [userId]);
+
+  const fetchAppointments = () => {
     axios
-      .get("http://localhost:4000/v1/allAppointments")
+      .get(`http://localhost:4000/api/appointmentsByPatient?patientId=${userId}`)
       .then((response) => {
-        setAppointments(response.data);
+        const sortedAppointments = response.data.sort((a, b) => new Date(a.appointmentDateTime) - new Date(b.appointmentDateTime));
+        setAppointments(sortedAppointments);
       })
       .catch((error) => {
         console.error("Error fetching appointments:", error);
       });
+  };
 
-    // Fetch doctors
+  const fetchDoctors = () => {
     axios
-      .get("http://localhost:4000/v1/doctors")
+      .get("http://localhost:4000/api/doctors")
       .then((response) => {
         setDoctors(response.data);
       })
       .catch((error) => {
         console.error("Error fetching doctors:", error);
       });
-  }, []);
+  };
 
   const handleLogout = () => {
     message.success("Logout successful!");
@@ -60,39 +56,24 @@ const DashboardPatient = () => {
   };
 
   const handleAddAppointment = () => {
-    console.log("selectedDoctorId:", selectedDoctorId);
-    console.log("selectedDateTime:", selectedDateTime);
-
-
     if (!selectedDoctorId || !selectedDateTime) {
-      message.error(
-        "Please select a doctor and a date and time for the appointment."
-      );
+      message.error("Please select a doctor and a date and time for the appointment.");
       return;
     }
-  
-    // const selectedDoctor = doctors.find((doctor) => doctor.id === selectedDoctorId);
-    // console.log("selectedDoctor:", selectedDoctor);
-    // if (!selectedDoctor) {
-    //   message.error("Selected doctor not found.");
-    //   return;
-    // }
-  
+
     const appointmentData = {
       doctorId: selectedDoctorId,
-      // doctorName: selectedDoctor.name,
-      patientId:userId,
+      patientId: userId,
       appointmentDateTime: selectedDateTime.format("YYYY-MM-DD HH:mm:ss"),
       status: "Pending",
     };
-    console.log("appointmentData",appointmentData);
-  
+
     axios
-      .post("http://localhost:4000/v1/appointment", appointmentData)
+      .post("http://localhost:4000/api/appointment", appointmentData)
       .then((response) => {
         message.success("Appointment added successfully!");
         setModalVisible(false);
-        setAppointments([...appointments, response.data]);
+        fetchAppointments(); // Refresh the appointments list
       })
       .catch((error) => {
         console.error("Error adding appointment:", error);
@@ -100,10 +81,63 @@ const DashboardPatient = () => {
       });
   };
 
+  const handleDeleteAppointment = (appointmentId) => {
+    axios
+      .delete(`http://localhost:4000/api/appointment/${appointmentId}`)
+      .then(() => {
+        message.success("Appointment deleted successfully!");
+        fetchAppointments(); // Refresh the appointments list
+      })
+      .catch((error) => {
+        console.error("Error deleting appointment:", error);
+        message.error("Failed to delete appointment. Please try again.");
+      });
+  };
+
+  const getDoctorNameById = (doctorId) => {
+    const doctor = doctors.find((doc) => doc._id === doctorId);
+    return doctor ? doctor.name : "Unknown";
+  };
+
   const columns = [
-    { title: "Doctor Name", dataIndex: "doctorName", key: "doctorName" },
-    { title: "Time", dataIndex: "time", key: "time" },
-    { title: "Status", dataIndex: "status", key: "status" },
+    {
+      title: "Sr No",
+      dataIndex: "srNo",
+      key: "srNo",
+      render: (text, record, index) => index + 1,
+    },
+    {
+      title: "Doctor Name",
+      dataIndex: "doctorId",
+      key: "doctorName",
+      render: (doctorId) => getDoctorNameById(doctorId),
+    },
+    {
+      title: "Date",
+      dataIndex: "appointmentDateTime",
+      key: "appointmentDate",
+      render: (date) => moment(date).format("YYYY-MM-DD"),
+    },
+    {
+      title: "Time",
+      dataIndex: "appointmentDateTime",
+      key: "appointmentTime",
+      render: (time) => moment(time).format("HH:mm"),
+    },
+    {
+      title: "Status",
+      dataIndex: "status",
+      key: "status",
+    },
+    {
+      title: "Action",
+      key: "action",
+      render: (text, record) => (
+        <Button type="link" onClick={() => handleDeleteAppointment(record._id)}>
+          Delete
+        </Button>
+      ),
+    },
   ];
 
   return (
@@ -116,11 +150,7 @@ const DashboardPatient = () => {
           <Menu.Item key="user" icon={<UserOutlined />}>
             {userName}
           </Menu.Item>
-          <Menu.Item
-            key="logout"
-            icon={<LogoutOutlined />}
-            onClick={handleLogout}
-          >
+          <Menu.Item key="logout" icon={<LogoutOutlined />} onClick={handleLogout}>
             Logout
           </Menu.Item>
         </Menu>
@@ -138,23 +168,16 @@ const DashboardPatient = () => {
               <Button key="back" onClick={() => setModalVisible(false)}>
                 Close
               </Button>,
-              <Button
-                key="submit"
-                type="primary"
-                onClick={handleAddAppointment}
-              >
+              <Button key="submit" type="primary" onClick={handleAddAppointment}>
                 Create Appointment
               </Button>,
             ]}
           >
             <Space direction="vertical">
-            <Select
+              <Select
                 placeholder="Select Doctor"
                 style={{ width: "100%" }}
-                onChange={(value) => {
-                  console.log("Selected doctor ID:", value);
-                  setSelectedDoctorId(value);
-                }}
+                onChange={(value) => setSelectedDoctorId(value)}
                 value={selectedDoctorId}
               >
                 {doctors.map((doctor) => (
@@ -163,15 +186,11 @@ const DashboardPatient = () => {
                   </Option>
                 ))}
               </Select>
-              <DatePicker
-                showTime
-                onChange={handleDateTimeChange}
-                placeholder="Select Date and Time"
-              />
+              <DatePicker showTime onChange={handleDateTimeChange} placeholder="Select Date and Time" />
             </Space>
           </Modal>
           <h2>Your Appointments</h2>
-          <Table dataSource={appointments} columns={columns} />
+          <Table dataSource={appointments} columns={columns} rowKey="_id" pagination={false} />
         </div>
       </Content>
     </Layout>

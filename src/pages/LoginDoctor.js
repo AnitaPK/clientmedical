@@ -8,9 +8,9 @@ const DoctorLogin = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    axios.get('http://localhost:4000/v1/doctors')
+    axios.get('http://localhost:4000/api/doctors')
       .then(response => {
-        console.log('respons.data',response.data);
+        console.log('respons.data', response.data);
         setDoctors(response.data);
       })
       .catch(error => {
@@ -23,10 +23,8 @@ const DoctorLogin = () => {
     const doctor = doctors.find(doc => doc.email === email && doc.password === password);
 
     if (doctor) {
-      message.success('Login successful! for doctor');
-      console.log(doctor);
-      // Perform set auth token
-      navigate('/doctor-dashboard')
+      message.success('Login successful for doctor');
+      navigate('/doctor-dashboard', { state: { user: doctor.name, id: doctor._id } });
     } else {
       message.error('Invalid email or password!');
     }

@@ -19,7 +19,7 @@ const RegistrationDoctor = () => {
       specialist: values.specialist,
     };
 
-    axios.post('http://localhost:4000/v1/doctor/addDoctor', payload)
+    axios.post('http://localhost:4000/api/doctor/addDoctor', payload)
       .then((response) => {
         console.log('Success:', response.data);
         message.success('Registration successful!');
